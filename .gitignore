@@ -1,0 +1,21 @@
+# Dependencies
+frontend/node_modules/
+
+# Next.js build
+frontend/.next/
+frontend/out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Debug
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
