@@ -10,6 +10,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand palette (TMS) */
+  --color-brand: #2b54b7;
+  --color-brand-hover: #23479c;
+  --color-brand-ink: #12306e;
+  --color-brand-deep: #0f2a63;
+  --color-brand-soft: #c3d0f4;
+  --color-brand-mist: #e8eefc;
 }
 
 @media (prefers-color-scheme: dark) {
