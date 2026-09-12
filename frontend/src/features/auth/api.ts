@@ -25,3 +25,18 @@ export function login(credentials: LoginCredentials) {
     body: JSON.stringify(credentials),
   });
 }
+
+export type RegisterPayload = {
+  full_name: string;
+  username: string;
+  email: string;
+  password: string;
+  confirm_password: string;
+};
+
+export function register(payload: RegisterPayload) {
+  return apiFetch<LoginResponse>("/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

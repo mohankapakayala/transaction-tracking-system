@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { login } from "@/features/auth/api";
@@ -90,7 +89,11 @@ export function LoginForm() {
         </p>
       ) : null}
 
-      <Button type="submit" className="mt-6 disabled:opacity-60" disabled={submitting}>
+      <Button
+        type="submit"
+        className="mt-6 disabled:opacity-60"
+        disabled={submitting}
+      >
         {submitting ? "Signing in…" : "Login"}
       </Button>
 
