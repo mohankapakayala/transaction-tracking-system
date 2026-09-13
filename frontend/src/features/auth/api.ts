@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { authFetch } from "@/features/auth/client";
 
 export type AuthUser = {
   id: number;
@@ -36,6 +37,31 @@ export type RegisterPayload = {
 
 export function register(payload: RegisterPayload) {
   return apiFetch<LoginResponse>("/auth/register/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Revokes the refresh token server-side so it cannot be replayed. */
+export function logout(refresh: string) {
+  return authFetch<{ message: string }>("/auth/logout/", {
+    method: "POST",
+    body: JSON.stringify({ refresh }),
+  });
+}
+
+export type ChangePasswordPayload = {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+};
+
+/**
+ * Changing the password ends every other session, so the backend answers with
+ * a fresh pair for this one. Store it or the next request will 401.
+ */
+export function changePassword(payload: ChangePasswordPayload) {
+  return authFetch<LoginResponse>("/auth/change-password/", {
     method: "POST",
     body: JSON.stringify(payload),
   });

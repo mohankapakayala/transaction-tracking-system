@@ -4,16 +4,24 @@ const ACCESS_TOKEN_KEY = "tms.accessToken";
 const REFRESH_TOKEN_KEY = "tms.refreshToken";
 const USER_KEY = "tms.user";
 
-type Session = {
+type Tokens = {
   access: string;
   refresh: string;
+};
+
+type Session = Tokens & {
   user: AuthUser;
 };
 
 export function saveSession({ access, refresh, user }: Session) {
+  saveTokens({ access, refresh });
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+/** Stores a rotated pair from `/auth/refresh/`, leaving the user untouched. */
+export function saveTokens({ access, refresh }: Tokens) {
   localStorage.setItem(ACCESS_TOKEN_KEY, access);
   localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 /** Raw JSON for the signed-in user, or null. Stable enough for `useSyncExternalStore`. */

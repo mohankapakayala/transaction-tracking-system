@@ -8,9 +8,5 @@ export const metadata: Metadata = {
 
 /** Placeholder landing page so the login flow has somewhere to go. */
 export default function DashboardPage() {
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 bg-slate-100 p-8 font-sans">
-      <DashboardGreeting />
-    </main>
-  );
+  return <DashboardGreeting />;
 }

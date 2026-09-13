@@ -18,6 +18,10 @@
   --color-brand-deep: #0f2a63;
   --color-brand-soft: #c3d0f4;
   --color-brand-mist: #e8eefc;
+
+  /* Application shell (sidebar) */
+  --color-navy: #16233f;
+  --color-navy-soft: #24365c;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -38,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    # Stores refresh tokens that logout / rotation has revoked, so a stolen
+    # one stops working before its natural expiry.
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     # Local apps
     'login_register',
@@ -133,4 +137,36 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+    # Deny by default: a view is only public if it opts out with
+    # `permission_classes = [AllowAny]`. Forgetting to lock a new view down
+    # then fails closed rather than leaking data.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    # Brute-force budgets for the endpoints that take a password. Generous
+    # enough that a user fumbling their password never notices.
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/min",
+        "register": "5/min",
+        "change_password": "5/min",
+    },
+}
+
+SIMPLE_JWT = {
+    # Short-lived access token: it travels on every request and cannot be
+    # revoked, so the exposure window is what limits the damage.
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    # The refresh token is used rarely and can be blacklisted, so it lives
+    # long enough to keep a user signed in across a working week.
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # Hand out a fresh refresh token on every refresh and revoke the old one.
+    # A replayed refresh token is then detectable and useless.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    # Keeps `user.last_login` meaningful for auditing.
+    "UPDATE_LAST_LOGIN": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
