@@ -24,6 +24,20 @@ export function saveTokens({ access, refresh }: Tokens) {
   localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
 }
 
+/**
+ * Applies a profile edit to the cached user, leaving the tokens alone.
+ *
+ * Without this the copy in `localStorage` keeps the address the user just
+ * changed, and anything reading it shows a stale email until the next login.
+ */
+export function updateStoredUser(changes: Partial<AuthUser>) {
+  const user = getStoredUser();
+
+  if (!user) return;
+
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...user, ...changes }));
+}
+
 /** Raw JSON for the signed-in user, or null. Stable enough for `useSyncExternalStore`. */
 export function readStoredUser() {
   return localStorage.getItem(USER_KEY);

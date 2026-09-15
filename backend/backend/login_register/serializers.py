@@ -1,5 +1,3 @@
-from zoneinfo import available_timezones
-
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
@@ -130,14 +128,15 @@ class FullNameField(serializers.CharField):
 class ProfileSerializer(serializers.ModelSerializer):
     """The account details shown on the profile screen.
 
-    Spans two tables: the name lives on `auth.User`, the rest on `Profile`.
-    `username` and `email` are read-only — they identify the account, and
-    changing them needs its own flow.
+    Spans two tables: the name and email live on `auth.User`, the phone on
+    `Profile`. Only `username` is read-only.
     """
 
     full_name = FullNameField(max_length=150)
+    # The username identifies the account and stays put; the email is the
+    # user's own contact address and is theirs to change.
     username = serializers.CharField(source="user.username", read_only=True)
-    email = serializers.EmailField(source="user.email", read_only=True)
+    email = serializers.EmailField(source="user.email")
 
     class Meta:
         model = Profile
@@ -146,8 +145,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "work_phone",
-            "work_address",
-            "timezone",
         ]
         extra_kwargs = {
             # Deliberately permissive: numbers are written every which way
@@ -161,27 +158,47 @@ class ProfileSerializer(serializers.ModelSerializer):
                     )
                 ],
             },
-            "work_address": {"allow_blank": True},
         }
+
+    def validate_email(self, value):
+        # The email doubles as a way to find an account, so it has to stay
+        # unique. `exclude` lets the user re-save their own address unchanged.
+        taken = (
+            User.objects.filter(email__iexact=value)
+            .exclude(pk=self.instance.user_id)
+            .exists()
+        )
+
+        if taken:
+            raise serializers.ValidationError(
+                "An account with this email already exists."
+            )
+
+        return value
 
     def validate_full_name(self, value):
         if not value.strip():
             raise serializers.ValidationError("Enter your full name.")
         return value
 
-    def validate_timezone(self, value):
-        # Checked against the system's tz database rather than a hard-coded
-        # list, so the picker can offer any zone the server can resolve.
-        if value not in available_timezones():
-            raise serializers.ValidationError("Choose a valid timezone.")
-        return value
-
     def update(self, instance, validated_data):
+        user = instance.user
+        changed = []
+
         full_name = validated_data.pop("full_name", None)
 
         if full_name is not None:
-            user = instance.user
             user.first_name, user.last_name = split_full_name(full_name)
-            user.save(update_fields=["first_name", "last_name"])
+            changed += ["first_name", "last_name"]
+
+        # `source="user.email"` nests the value under the relation's name.
+        email = validated_data.pop("user", {}).get("email")
+
+        if email is not None:
+            user.email = email
+            changed.append("email")
+
+        if changed:
+            user.save(update_fields=changed)
 
         return super().update(instance, validated_data)

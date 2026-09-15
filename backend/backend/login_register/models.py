@@ -23,10 +23,6 @@ class Profile(models.Model):
         related_name="profile",
     )
     work_phone = models.CharField(max_length=32, blank=True)
-    work_address = models.CharField(max_length=255, blank=True)
-    # An IANA key such as `America/Los_Angeles`, not a fixed offset — the
-    # offset changes twice a year and the key does not.
-    timezone = models.CharField(max_length=64, default="UTC")
 
     def __str__(self):
         return f"Profile for {self.user.username}"
