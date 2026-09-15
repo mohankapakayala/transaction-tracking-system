@@ -6,15 +6,9 @@ export type Profile = {
   username: string;
   email: string;
   work_phone: string;
-  work_address: string;
-  /** An IANA key such as `America/Los_Angeles`. */
-  timezone: string;
 };
 
-export type ProfileUpdate = Pick<
-  Profile,
-  "full_name" | "work_phone" | "work_address" | "timezone"
->;
+export type ProfileUpdate = Pick<Profile, "full_name" | "email" | "work_phone">;
 
 /** The signed-in user's own profile — the account comes from the token. */
 export function getProfile() {

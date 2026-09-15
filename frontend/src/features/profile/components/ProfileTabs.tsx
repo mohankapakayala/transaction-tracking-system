@@ -1,14 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { ChangePasswordForm } from "@/features/auth/components/ChangePasswordForm";
 import { GeneralInformationForm } from "@/features/profile/components/GeneralInformationForm";
 import { cn } from "@/lib/cn";
 
 const TABS = [
   { id: "general", label: "General Information" },
-  { id: "security", label: "Security Settings" },
+  { id: "history", label: "History & Permissions" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -72,15 +72,25 @@ export function ProfileTabs() {
           <GeneralInformationForm />
         </Panel>
 
-        <Panel id="security" active={active}>
-          <h2 className="text-xl font-semibold text-slate-900">Change Password</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Choose a new password. This signs you out on your other devices.
+        <Panel id="history" active={active}>
+          <h2 className="text-xl font-semibold text-slate-900">
+            History &amp; Permissions
+          </h2>
+          <p className="mt-2 max-w-prose text-sm text-slate-500">
+            Account activity and role permissions will appear here once the
+            behaviour is defined.
           </p>
 
-          <div className="mt-8 max-w-sm">
-            <ChangePasswordForm />
-          </div>
+          <p className="mt-6 text-sm text-slate-600">
+            To change your password, go to{" "}
+            <Link
+              href="/change-password"
+              className="font-medium text-brand hover:underline"
+            >
+              Change Password
+            </Link>
+            .
+          </p>
         </Panel>
       </div>
     </>

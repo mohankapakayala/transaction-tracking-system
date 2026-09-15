@@ -302,7 +302,6 @@ class ProfileTests(APITestCase):
         self.assertEqual(response.data["full_name"], "Ada Lovelace")
         self.assertEqual(response.data["username"], "tester")
         self.assertEqual(response.data["email"], "tester@example.com")
-        self.assertEqual(response.data["timezone"], "UTC")
 
     def test_profile_requires_authentication(self):
         response = self.client.get(self.url)
@@ -310,7 +309,9 @@ class ProfileTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_one_user_cannot_read_anothers_profile(self):
-        other = User.objects.create_user(username="other", password=PASSWORD)
+        other = User.objects.create_user(
+            username="other", email="other@example.com", password=PASSWORD
+        )
         Profile.objects.create(user=other, work_phone="+1 555 000 1111")
 
         self.authenticate()
@@ -324,9 +325,8 @@ class ProfileTests(APITestCase):
     def test_patch_saves_every_editable_field(self):
         response = self.patch(
             full_name="Ada King Lovelace",
+            email="ada@example.com",
             work_phone="+1 (555) 012-3456",
-            work_address="123 Tech Parkway, Silicon Valley, CA 94025",
-            timezone="America/Los_Angeles",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -335,16 +335,17 @@ class ProfileTests(APITestCase):
         self.assertEqual(self.user.first_name, "Ada")
         # Everything after the first space stays together.
         self.assertEqual(self.user.last_name, "King Lovelace")
+        self.assertEqual(self.user.email, "ada@example.com")
 
         profile = Profile.objects.get(user=self.user)
         self.assertEqual(profile.work_phone, "+1 (555) 012-3456")
-        self.assertEqual(profile.timezone, "America/Los_Angeles")
 
     def test_patch_leaves_omitted_fields_alone(self):
         self.patch(work_phone="+1 555 012 3456")
-        response = self.patch(work_address="1 Infinite Loop")
+        response = self.patch(full_name="Ada Lovelace")
 
         self.assertEqual(response.data["work_phone"], "+1 555 012 3456")
+        self.assertEqual(response.data["email"], "tester@example.com")
 
     def test_patch_clears_an_optional_field(self):
         self.patch(work_phone="+1 555 012 3456")
@@ -359,23 +360,51 @@ class ProfileTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("full_name", response.data)
 
-    def test_patch_rejects_an_unknown_timezone(self):
-        response = self.patch(timezone="Mars/Olympus_Mons")
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("timezone", response.data)
-
     def test_patch_rejects_a_phone_number_that_is_not_one(self):
         response = self.patch(work_phone="call me maybe")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("work_phone", response.data)
 
-    def test_patch_ignores_attempts_to_change_the_account_identifiers(self):
-        response = self.patch(username="someone-else", email="new@example.com")
+    def test_patch_ignores_attempts_to_change_the_username(self):
+        response = self.patch(username="someone-else")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, "tester")
+
+    def test_patch_rejects_an_email_another_account_already_uses(self):
+        User.objects.create_user(
+            username="other", email="taken@example.com", password=PASSWORD
+        )
+
+        response = self.patch(email="TAKEN@example.com")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+
+        self.user.refresh_from_db()
         self.assertEqual(self.user.email, "tester@example.com")
+
+    def test_patch_allows_resaving_the_users_own_email(self):
+        response = self.patch(email="tester@example.com")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_patch_rejects_a_malformed_email(self):
+        response = self.patch(email="not-an-email")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+
+    def test_changing_the_email_does_not_change_the_login_username(self):
+        self.patch(email="ada@example.com")
+
+        # The username is what `authenticate` takes, so it must survive.
+        signed_in = self.client.post(
+            reverse("login_register:login"),
+            {"username": "tester", "password": PASSWORD},
+            format="json",
+        )
+        self.assertEqual(signed_in.status_code, status.HTTP_200_OK)
